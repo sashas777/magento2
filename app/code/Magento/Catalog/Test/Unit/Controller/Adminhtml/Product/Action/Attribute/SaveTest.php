@@ -229,6 +229,8 @@ class SaveTest extends \PHPUnit\Framework\TestCase
         $this->objectManager->expects($this->any())->method('get')->will($this->returnValueMap([
             [\Magento\CatalogInventory\Api\StockConfigurationInterface::class, $this->stockConfig],
         ]));
+
+        $this->request->expects($this->any())->method('isPost')->willReturn(true);
     }
 
     public function testExecuteThatProductIdsAreObtainedFromAttributeHelper()
@@ -250,8 +252,8 @@ class SaveTest extends \PHPUnit\Framework\TestCase
             ['inventory', [], [7]],
         ]));
 
-        $this->messageManager->expects($this->never())->method('addError');
-        $this->messageManager->expects($this->never())->method('addException');
+        $this->messageManager->expects($this->never())->method('addErrorMessage');
+        $this->messageManager->expects($this->never())->method('addExceptionMessage');
 
         $this->object->execute();
     }

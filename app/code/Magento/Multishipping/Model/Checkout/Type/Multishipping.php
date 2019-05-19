@@ -171,6 +171,11 @@ class Multishipping extends \Magento\Framework\DataObject
     private $logger;
 
     /**
+     * @var \Magento\Framework\Api\DataObjectHelper
+     */
+    private $dataObjectHelper;
+
+    /**
      * Constructor
      *
      * @param \Magento\Checkout\Model\Session $checkoutSession
@@ -227,7 +232,8 @@ class Multishipping extends \Magento\Framework\DataObject
         \Magento\Quote\Api\Data\CartExtensionFactory $cartExtensionFactory = null,
         AllowedCountries $allowedCountryReader = null,
         Multishipping\PlaceOrderFactory $placeOrderFactory = null,
-        LoggerInterface $logger = null
+        LoggerInterface $logger = null,
+        \Magento\Framework\Api\DataObjectHelper $dataObjectHelper = null
     ) {
         $this->_eventManager = $eventManager;
         $this->_scopeConfig = $scopeConfig;
@@ -258,6 +264,8 @@ class Multishipping extends \Magento\Framework\DataObject
             ->get(Multishipping\PlaceOrderFactory::class);
         $this->logger = $logger ?: ObjectManager::getInstance()
             ->get(LoggerInterface::class);
+        $this->dataObjectHelper = $dataObjectHelper ?: ObjectManager::getInstance()
+            ->get(\Magento\Framework\Api\DataObjectHelper::class);
         parent::__construct($data);
         $this->_init();
     }
@@ -663,7 +671,14 @@ class Multishipping extends \Magento\Framework\DataObject
         $quote->reserveOrderId();
         $quote->collectTotals();
 
-        $order = $this->quoteAddressToOrder->convert($address);
+        $order = $this->_orderFactory->create();
+
+        $this->dataObjectHelper->mergeDataObjects(
+            \Magento\Sales\Api\Data\OrderInterface::class,
+            $order,
+            $this->quoteAddressToOrder->convert($address)
+        );
+
         $order->setQuote($quote);
         $order->setBillingAddress($this->quoteAddressToOrderAddress->convert($quote->getBillingAddress()));
 
@@ -671,6 +686,7 @@ class Multishipping extends \Magento\Framework\DataObject
             $order->setIsVirtual(1);
         } else {
             $order->setShippingAddress($this->quoteAddressToOrderAddress->convert($address));
+            $order->setShippingMethod($address->getShippingMethod());
         }
 
         $order->setPayment($this->quotePaymentToOrderPayment->convert($quote->getPayment()));
@@ -1152,7 +1168,7 @@ class Multishipping extends \Magento\Framework\DataObject
     {
         foreach ($shippingAddresses as $address) {
             foreach ($address->getAllItems() as $addressItem) {
-                if (in_array($addressItem->getId(), $placedAddressItems)) {
+                if (in_array($addressItem->getQuoteItemId(), $placedAddressItems)) {
                     if ($addressItem->getProduct()->getIsVirtual()) {
                         $addressItem->isDeleted(true);
                     } else {
@@ -1202,7 +1218,7 @@ class Multishipping extends \Magento\Framework\DataObject
         $item = array_pop($items);
         foreach ($addresses as $address) {
             foreach ($address->getAllItems() as $addressItem) {
-                if ($addressItem->getId() == $item->getQuoteItemId()) {
+                if ($addressItem->getQuoteItemId() == $item->getQuoteItemId()) {
                     return (int)$address->getId();
                 }
             }

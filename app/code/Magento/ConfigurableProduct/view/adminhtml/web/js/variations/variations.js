@@ -383,7 +383,11 @@ define([
          * Chose action for the form save button
          */
         saveFormHandler: function () {
-            this.serializeData();
+            this.formElement().validate();
+
+            if (this.formElement().source.get('params.invalid') === false) {
+                this.serializeData();
+            }
 
             if (this.checkForNewAttributes()) {
                 this.formSaveParams = arguments;
@@ -407,15 +411,17 @@ define([
          *   - associated_product_ids_serialized.
          */
         serializeData: function () {
-            this.source.data['configurable-matrix-serialized'] =
-                JSON.stringify(this.source.data['configurable-matrix']);
+            if (this.source.data['configurable-matrix']) {
+                this.source.data['configurable-matrix-serialized'] =
+                    JSON.stringify(this.source.data['configurable-matrix']);
+                delete this.source.data['configurable-matrix'];
+            }
 
-            delete this.source.data['configurable-matrix'];
-
-            this.source.data['associated_product_ids_serialized'] =
-                JSON.stringify(this.source.data['associated_product_ids']);
-
-            delete this.source.data['associated_product_ids'];
+            if (this.source.data['associated_product_ids']) {
+                this.source.data['associated_product_ids_serialized'] =
+                    JSON.stringify(this.source.data['associated_product_ids']);
+                delete this.source.data['associated_product_ids'];
+            }
         },
 
         /**

@@ -36,7 +36,7 @@ class VerticalTest extends \PHPUnit\Framework\TestCase
     protected function setUp()
     {
         $this->abstractElementMock = $this->getMockBuilder(AbstractElement::class)
-            ->setMethods(['getComment', 'getLabel', 'getHint'])
+            ->setMethods(['getComment', 'getLabel', 'getHint', 'getHtmlId', 'getName'])
             ->disableOriginalConstructor()
             ->getMock();
         $this->contextMock = $this->getMockBuilder(Context::class)
@@ -65,7 +65,7 @@ class VerticalTest extends \PHPUnit\Framework\TestCase
             ->method('getHint')
             ->willReturn('New hint');
         $html = $this->vertical->render($this->abstractElementMock);
-        $this->assertRegexp(
+        $this->assertRegExp(
             "/New comment/",
             $html
         );

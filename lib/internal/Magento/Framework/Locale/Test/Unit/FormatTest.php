@@ -6,6 +6,9 @@
 
 namespace Magento\Framework\Locale\Test\Unit;
 
+/**
+ * Tests class for Number locale format
+ */
 class FormatTest extends \PHPUnit\Framework\TestCase
 {
     /**
@@ -41,9 +44,7 @@ class FormatTest extends \PHPUnit\Framework\TestCase
         $this->scope = $this->getMockBuilder(\Magento\Framework\App\ScopeInterface::class)
             ->setMethods(['getCurrentCurrency'])
             ->getMockForAbstractClass();
-        $this->scope->expects($this->once())
-            ->method('getCurrentCurrency')
-            ->willReturn($this->currency);
+
         $this->scopeResolver = $this->getMockBuilder(\Magento\Framework\App\ScopeResolverInterface::class)
             ->setMethods(['getScope'])
             ->getMockForAbstractClass();
@@ -52,7 +53,10 @@ class FormatTest extends \PHPUnit\Framework\TestCase
             ->willReturn($this->scope);
         $this->localeResolver = $this->getMockBuilder(\Magento\Framework\Locale\ResolverInterface::class)
             ->getMock();
+
+        /** @var \Magento\Directory\Model\CurrencyFactory|\PHPUnit_Framework_MockObject_MockObject $currencyFactory */
         $currencyFactory = $this->getMockBuilder(\Magento\Directory\Model\CurrencyFactory::class)
+            ->disableOriginalConstructor()
             ->getMock();
 
         $this->formatModel = new \Magento\Framework\Locale\Format(
@@ -69,6 +73,10 @@ class FormatTest extends \PHPUnit\Framework\TestCase
      */
     public function testGetPriceFormat($localeCode, $expectedResult)
     {
+        $this->scope->expects($this->once())
+            ->method('getCurrentCurrency')
+            ->willReturn($this->currency);
+
         $result = $this->formatModel->getPriceFormat($localeCode);
         $intersection = array_intersect_assoc($result, $expectedResult);
         $this->assertCount(count($expectedResult), $intersection);
@@ -79,11 +87,48 @@ class FormatTest extends \PHPUnit\Framework\TestCase
      */
     public function getPriceFormatDataProvider()
     {
+        $swissGroupSymbol = INTL_ICU_VERSION >= 59.1 ? '’' : '\'';
         return [
             ['en_US', ['decimalSymbol' => '.', 'groupSymbol' => ',']],
             ['de_DE', ['decimalSymbol' => ',', 'groupSymbol' => '.']],
-            ['de_CH', ['decimalSymbol' => '.', 'groupSymbol' => '\'']],
+            ['de_CH', ['decimalSymbol' => '.', 'groupSymbol' => $swissGroupSymbol]],
             ['uk_UA', ['decimalSymbol' => ',', 'groupSymbol' => ' ']]
+        ];
+    }
+
+    /**
+     * @param string|float|int $value
+     * @param float | null $expected
+     * @param string $locale
+     * @dataProvider provideNumbers
+     */
+    public function testGetNumber(string $value, float $expected, string $locale = null)
+    {
+        if ($locale !== null) {
+            $this->localeResolver->method('getLocale')->willReturn($locale);
+        }
+        $this->assertEquals($expected, $this->formatModel->getNumber($value));
+    }
+
+    /**
+     *
+     * @return array
+     */
+    public function provideNumbers(): array
+    {
+        return [
+            ['  2345.4356,1234', 23454356.1234],
+            ['+23,3452.123', 233452.123],
+            ['12343', 12343],
+            ['-9456km', -9456],
+            ['0', 0],
+            ['2 054,10', 2054.1],
+            ['2046,45', 2046.45],
+            ['2 054.52', 2054.52],
+            ['2,46 GB', 2.46],
+            ['2,054.00', 2054],
+            ['4,000', 4000.0, 'ja_JP'],
+            ['4,000', 4.0, 'en_US'],
         ];
     }
 }

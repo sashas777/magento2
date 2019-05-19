@@ -18,7 +18,7 @@ class Remove extends \Magento\Catalog\Controller\Product\Compare
     public function execute()
     {
         $productId = (int)$this->getRequest()->getParam('product');
-        if ($productId) {
+        if ($this->isActionAllowed() && $productId) {
             $storeId = $this->_storeManager->getStore()->getId();
             try {
                 $product = $this->productRepository->getById($productId, false, $storeId);
@@ -44,7 +44,7 @@ class Remove extends \Magento\Catalog\Controller\Product\Compare
                     $item->delete();
                     $productName = $this->_objectManager->get(\Magento\Framework\Escaper::class)
                         ->escapeHtml($product->getName());
-                    $this->messageManager->addSuccess(
+                    $this->messageManager->addSuccessMessage(
                         __('You removed product %1 from the comparison list.', $productName)
                     );
                     $this->_eventManager->dispatch(
@@ -60,5 +60,13 @@ class Remove extends \Magento\Catalog\Controller\Product\Compare
             $resultRedirect = $this->resultRedirectFactory->create();
             return $resultRedirect->setRefererOrBaseUrl();
         }
+    }
+
+    /**
+     * @return bool
+     */
+    private function isActionAllowed(): bool
+    {
+        return $this->getRequest()->isPost() && $this->_formKeyValidator->validate($this->getRequest());
     }
 }

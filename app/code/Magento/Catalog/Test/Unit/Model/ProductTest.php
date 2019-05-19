@@ -513,6 +513,9 @@ class ProductTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals($initCategoryCollection, $result);
     }
 
+    /**
+     * @return array
+     */
     public function getCategoryCollectionCollectionNullDataProvider()
     {
         return [
@@ -540,6 +543,7 @@ class ProductTest extends \PHPUnit\Framework\TestCase
 
     public function testGetCategory()
     {
+        $this->model->setData('category_ids', [10]);
         $this->category->expects($this->any())->method('getId')->will($this->returnValue(10));
         $this->registry->expects($this->any())->method('registry')->will($this->returnValue($this->category));
         $this->categoryRepository->expects($this->any())->method('get')->will($this->returnValue($this->category));
@@ -548,12 +552,21 @@ class ProductTest extends \PHPUnit\Framework\TestCase
 
     public function testGetCategoryId()
     {
-        $this->category->expects($this->once())->method('getId')->will($this->returnValue(10));
+        $this->model->setData('category_ids', [10]);
+        $this->category->expects($this->any())->method('getId')->will($this->returnValue(10));
 
         $this->registry->expects($this->at(0))->method('registry');
         $this->registry->expects($this->at(1))->method('registry')->will($this->returnValue($this->category));
         $this->assertFalse($this->model->getCategoryId());
         $this->assertEquals(10, $this->model->getCategoryId());
+    }
+
+    public function testGetCategoryIdWhenProductNotInCurrentCategory()
+    {
+        $this->model->setData('category_ids', [12]);
+        $this->category->expects($this->once())->method('getId')->will($this->returnValue(10));
+        $this->registry->expects($this->any())->method('registry')->will($this->returnValue($this->category));
+        $this->assertFalse($this->model->getCategoryId());
     }
 
     public function testGetIdBySku()
@@ -623,13 +636,16 @@ class ProductTest extends \PHPUnit\Framework\TestCase
         $this->model->reindex();
     }
 
+    /**
+     * @return array
+     */
     public function getProductReindexProvider()
     {
-        return array(
+        return [
             'set 1' => [true, false, 1, 1],
             'set 2' => [true, true, 1, 0],
             'set 3' => [false, false, 1, 0]
-        );
+        ];
     }
 
     public function testPriceReindexCallback()

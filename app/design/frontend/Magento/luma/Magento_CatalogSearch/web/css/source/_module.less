@@ -18,6 +18,20 @@
 //  _____________________________________________
 
 & when (@media-common = true) {
+    
+    .search {
+        .fieldset {
+            .control {
+                .addon {
+                    input {
+                        flex-basis: auto;
+                        width: 100%;
+                    }
+                }
+            }
+        }
+    }
+    
     .block-search {
         margin-bottom: 0;
 
@@ -37,9 +51,9 @@
             @_icon-font-size: 22px,
             @_icon-font-line-height: 28px,
             @_icon-font-margin: 0 @indent__s 0 0,
-            @_icon-font-color: @minicart-icons-color,
-            @_icon-font-color-hover: @minicart-icons-color-hover,
-            @_icon-font-color-active: @minicart-icons-color-hover,
+            @_icon-font-color: @header-icons-color,
+            @_icon-font-color-hover: @header-icons-color-hover,
+            @_icon-font-color-active: @header-icons-color-hover,
             @_icon-font-text-hide: true
             );
             display: inline-block;
@@ -199,6 +213,19 @@
 //  Mobile
 //  _____________________________________________
 
+.media-width(@extremum, @break) when (@extremum = 'max') and (@break = @screen__m) {
+    .form.search.advanced {
+        .field.price {
+            .with-addon {
+                .input-text {
+                    flex-basis: auto;
+                    width: 100%;
+                }
+            }
+        }
+    }
+}
+
 .media-width(@extremum, @break) when (@extremum = 'max') and (@break = @screen__s) {
     .block-search {
         margin-top: @indent__s;
@@ -260,5 +287,10 @@
 
     .search-autocomplete {
         margin-top: 0;
+    }
+
+    .form.search.advanced {
+        min-width: 600px;
+        width: 50%;
     }
 }

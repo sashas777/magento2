@@ -107,7 +107,10 @@ class Engine implements EngineInterface
             && in_array($attribute->getFrontendInput(), ['text', 'textarea'])
         ) {
             $result = $value;
-        } elseif ($this->isTermFilterableAttribute($attribute)) {
+        } elseif ($this->isTermFilterableAttribute($attribute)
+                  || ($attribute->getIsSearchable()
+                      && in_array($attribute->getFrontendInput(), ['select', 'multiselect']))
+        ) {
             $result = '';
         }
 
@@ -115,12 +118,13 @@ class Engine implements EngineInterface
     }
 
     /**
-     * Prepare index array as a string glued by separator
+     * Prepare index array as a string glued by separator.
+     *
      * Support 2 level array gluing
      *
      * @param array $index
      * @param string $separator
-     * @return string
+     * @return array
      */
     public function prepareEntityIndex($index, $separator = ' ')
     {

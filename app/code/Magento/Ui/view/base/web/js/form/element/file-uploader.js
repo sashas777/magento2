@@ -13,8 +13,10 @@ define([
     'Magento_Ui/js/modal/alert',
     'Magento_Ui/js/lib/validation/validator',
     'Magento_Ui/js/form/element/abstract',
-    'jquery/file-uploader'
-], function ($, _, utils, uiAlert, validator, Element) {
+    'mage/translate',
+    'jquery/file-uploader',
+    'mage/adminhtml/tools'
+], function ($, _, utils, uiAlert, validator, Element, $t) {
     'use strict';
 
     return Element.extend({
@@ -133,7 +135,7 @@ define([
 
         /**
          * Retrieves from the list file which matches
-         * search criteria implemented in itertor function.
+         * search criteria implemented in iterator function.
          *
          * @param {Function} fn - Function that will be invoked
          *      for each file in the list.
@@ -193,7 +195,7 @@ define([
         },
 
         /**
-         * Returns path to the files' preview image.
+         * Returns path to the file's preview image.
          *
          * @param {Object} file
          * @returns {String}
@@ -310,7 +312,7 @@ define([
 
         /**
          * Abstract handler which is invoked when files are choosed for upload.
-         * May be used for implementation of aditional validation rules,
+         * May be used for implementation of additional validation rules,
          * e.g. total files and a total size rules.
          *
          * @abstract
@@ -327,6 +329,12 @@ define([
             var file     = data.files[0],
                 allowed  = this.isFileAllowed(file),
                 target   = $(e.target);
+
+            if (this.disabled()) {
+                this.notifyError($t('The file upload field is disabled.'));
+
+                return;
+            }
 
             if (allowed.passed) {
                 target.on('fileuploadsend', function (event, postData) {

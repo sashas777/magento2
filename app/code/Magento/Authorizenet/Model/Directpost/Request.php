@@ -7,6 +7,7 @@
 namespace Magento\Authorizenet\Model\Directpost;
 
 use Magento\Authorizenet\Model\Request as AuthorizenetRequest;
+use Magento\Framework\Intl\DateTimeFactory;
 
 /**
  * Authorize.net request model for DirectPost model
@@ -19,8 +20,32 @@ class Request extends AuthorizenetRequest
     protected $_transKey = null;
 
     /**
+     * Hexadecimal signature key.
+     *
+     * @var string
+     */
+    private $signatureKey = '';
+
+    /**
+     * @var DateTimeFactory
+     */
+    private $dateTimeFactory;
+
+    /**
+     * @param DateTimeFactory $dateTimeFactory
+     * @param array $data
+     */
+    public function __construct(
+        DateTimeFactory $dateTimeFactory,
+        array $data = []
+    ) {
+        $this->dateTimeFactory = $dateTimeFactory;
+        parent::__construct($data);
+    }
+
+    /**
      * Return merchant transaction key.
-     * Needed to generate sign.
+     * Needed to generate MD5 sign.
      *
      * @return string
      */
@@ -31,7 +56,7 @@ class Request extends AuthorizenetRequest
 
     /**
      * Set merchant transaction key.
-     * Needed to generate sign.
+     * Needed to generate MD5 sign.
      *
      * @param string $transKey
      * @return $this
@@ -43,7 +68,7 @@ class Request extends AuthorizenetRequest
     }
 
     /**
-     * Generates the fingerprint for request.
+     * Generates the MD5 fingerprint for request.
      *
      * @param string $merchantApiLoginId
      * @param string $merchantTransactionKey
@@ -63,7 +88,7 @@ class Request extends AuthorizenetRequest
     ) {
         return hash_hmac(
             "md5",
-            $merchantApiLoginId . "^" . $fpSequence . "^" . $fpTimestamp . "^" . $amount . "^" . $currencyCode,
+            $merchantApiLoginId . '^' . $fpSequence . '^' . $fpTimestamp . '^' . $amount . '^' . $currencyCode,
             $merchantTransactionKey
         );
     }
@@ -85,6 +110,7 @@ class Request extends AuthorizenetRequest
             ->setXRelayUrl($paymentMethod->getRelayUrl());
 
         $this->_setTransactionKey($paymentMethod->getConfigData('trans_key'));
+        $this->setSignatureKey($paymentMethod->getConfigData('signature_key'));
         return $this;
     }
 
@@ -112,50 +138,50 @@ class Request extends AuthorizenetRequest
             sprintf('%.2F', $order->getBaseShippingAmount())
         );
 
-        //need to use strval() because NULL values IE6-8 decodes as "null" in JSON in JavaScript,
+        //need to use (string) because NULL values IE6-8 decodes as "null" in JSON in JavaScript,
         //but we need "" for null values.
         $billing = $order->getBillingAddress();
         if (!empty($billing)) {
-            $this->setXFirstName(strval($billing->getFirstname()))
-                ->setXLastName(strval($billing->getLastname()))
-                ->setXCompany(strval($billing->getCompany()))
-                ->setXAddress(strval($billing->getStreetLine(1)))
-                ->setXCity(strval($billing->getCity()))
-                ->setXState(strval($billing->getRegion()))
-                ->setXZip(strval($billing->getPostcode()))
-                ->setXCountry(strval($billing->getCountryId()))
-                ->setXPhone(strval($billing->getTelephone()))
-                ->setXFax(strval($billing->getFax()))
-                ->setXCustId(strval($billing->getCustomerId()))
-                ->setXCustomerIp(strval($order->getRemoteIp()))
-                ->setXCustomerTaxId(strval($billing->getTaxId()))
-                ->setXEmail(strval($order->getCustomerEmail()))
-                ->setXEmailCustomer(strval($paymentMethod->getConfigData('email_customer')))
-                ->setXMerchantEmail(strval($paymentMethod->getConfigData('merchant_email')));
+            $this->setXFirstName((string)$billing->getFirstname())
+                ->setXLastName((string)$billing->getLastname())
+                ->setXCompany((string)$billing->getCompany())
+                ->setXAddress((string)$billing->getStreetLine(1))
+                ->setXCity((string)$billing->getCity())
+                ->setXState((string)$billing->getRegion())
+                ->setXZip((string)$billing->getPostcode())
+                ->setXCountry((string)$billing->getCountryId())
+                ->setXPhone((string)$billing->getTelephone())
+                ->setXFax((string)$billing->getFax())
+                ->setXCustId((string)$billing->getCustomerId())
+                ->setXCustomerIp((string)$order->getRemoteIp())
+                ->setXCustomerTaxId((string)$billing->getTaxId())
+                ->setXEmail((string)$order->getCustomerEmail())
+                ->setXEmailCustomer((string)$paymentMethod->getConfigData('email_customer'))
+                ->setXMerchantEmail((string)$paymentMethod->getConfigData('merchant_email'));
         }
 
         $shipping = $order->getShippingAddress();
         if (!empty($shipping)) {
             $this->setXShipToFirstName(
-                strval($shipping->getFirstname())
+                (string)$shipping->getFirstname()
             )->setXShipToLastName(
-                strval($shipping->getLastname())
+                (string)$shipping->getLastname()
             )->setXShipToCompany(
-                strval($shipping->getCompany())
+                (string)$shipping->getCompany()
             )->setXShipToAddress(
-                strval($shipping->getStreetLine(1))
+                (string)$shipping->getStreetLine(1)
             )->setXShipToCity(
-                strval($shipping->getCity())
+                (string)$shipping->getCity()
             )->setXShipToState(
-                strval($shipping->getRegion())
+                (string)$shipping->getRegion()
             )->setXShipToZip(
-                strval($shipping->getPostcode())
+                (string)$shipping->getPostcode()
             )->setXShipToCountry(
-                strval($shipping->getCountryId())
+                (string)$shipping->getCountryId()
             );
         }
 
-        $this->setXPoNum(strval($payment->getPoNumber()));
+        $this->setXPoNum((string)$payment->getPoNumber());
 
         return $this;
     }
@@ -168,17 +194,81 @@ class Request extends AuthorizenetRequest
      */
     public function signRequestData()
     {
-        $fpTimestamp = time();
-        $hash = $this->generateRequestSign(
-            $this->getXLogin(),
-            $this->_getTransactionKey(),
-            $this->getXAmount(),
-            $this->getXCurrencyCode(),
-            $this->getXFpSequence(),
-            $fpTimestamp
-        );
+        $fpDate = $this->dateTimeFactory->create('now', new \DateTimeZone('UTC'));
+        $fpTimestamp = $fpDate->getTimestamp();
+
+        if (!empty($this->getSignatureKey())) {
+            $hash = $this->generateSha2RequestSign(
+                $this->getXLogin(),
+                $this->getSignatureKey(),
+                $this->getXAmount(),
+                $this->getXCurrencyCode(),
+                $this->getXFpSequence(),
+                $fpTimestamp
+            );
+        } else {
+            $hash = $this->generateRequestSign(
+                $this->getXLogin(),
+                $this->_getTransactionKey(),
+                $this->getXAmount(),
+                $this->getXCurrencyCode(),
+                $this->getXFpSequence(),
+                $fpTimestamp
+            );
+        }
+
         $this->setXFpTimestamp($fpTimestamp);
         $this->setXFpHash($hash);
+
         return $this;
+    }
+
+    /**
+     * Generates the SHA2 fingerprint for request.
+     *
+     * @param string $merchantApiLoginId
+     * @param string $merchantSignatureKey
+     * @param string $amount
+     * @param string $currencyCode
+     * @param string $fpSequence An invoice number or random number.
+     * @param string $fpTimestamp
+     * @return string The fingerprint.
+     */
+    private function generateSha2RequestSign(
+        $merchantApiLoginId,
+        $merchantSignatureKey,
+        $amount,
+        $currencyCode,
+        $fpSequence,
+        $fpTimestamp
+    ): string {
+        $message = $merchantApiLoginId . '^' . $fpSequence . '^' . $fpTimestamp . '^' . $amount . '^' . $currencyCode;
+
+        return strtoupper(hash_hmac('sha512', $message, pack('H*', $merchantSignatureKey)));
+    }
+
+    /**
+     * Return merchant hexadecimal signature key.
+     *
+     * Needed to generate SHA2 sign.
+     *
+     * @return string
+     */
+    private function getSignatureKey(): string
+    {
+        return $this->signatureKey;
+    }
+
+    /**
+     * Set merchant hexadecimal signature key.
+     *
+     * Needed to generate SHA2 sign.
+     *
+     * @param string $signatureKey
+     * @return void
+     */
+    private function setSignatureKey(string $signatureKey)
+    {
+        $this->signatureKey = $signatureKey;
     }
 }

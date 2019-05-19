@@ -18,7 +18,7 @@ class Add extends \Magento\Catalog\Controller\Product\Compare
     public function execute()
     {
         $resultRedirect = $this->resultRedirectFactory->create();
-        if (!$this->_formKeyValidator->validate($this->getRequest())) {
+        if (!$this->isActionAllowed()) {
             return $resultRedirect->setRefererUrl();
         }
 
@@ -36,12 +36,27 @@ class Add extends \Magento\Catalog\Controller\Product\Compare
                 $productName = $this->_objectManager->get(
                     \Magento\Framework\Escaper::class
                 )->escapeHtml($product->getName());
-                $this->messageManager->addSuccess(__('You added product %1 to the comparison list.', $productName));
+                $this->messageManager->addComplexSuccessMessage(
+                    'addCompareSuccessMessage',
+                    [
+                        'product_name' => $productName,
+                        'compare_list_url' => $this->_url->getUrl('catalog/product_compare')
+                    ]
+                );
+
                 $this->_eventManager->dispatch('catalog_product_compare_add_product', ['product' => $product]);
             }
 
             $this->_objectManager->get(\Magento\Catalog\Helper\Product\Compare::class)->calculate();
         }
         return $resultRedirect->setRefererOrBaseUrl();
+    }
+
+    /**
+     * @return bool
+     */
+    private function isActionAllowed(): bool
+    {
+        return $this->getRequest()->isPost() && $this->_formKeyValidator->validate($this->getRequest());
     }
 }

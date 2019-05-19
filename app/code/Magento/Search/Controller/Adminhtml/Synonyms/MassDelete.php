@@ -6,8 +6,10 @@
 
 namespace Magento\Search\Controller\Adminhtml\Synonyms;
 
+use Magento\Framework\Exception\NotFoundException;
+
 /**
- * Mass-Delete Controller
+ * Mass-Delete Controller.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
@@ -56,13 +58,17 @@ class MassDelete extends \Magento\Backend\App\Action
     }
 
     /**
-     * Execute action
+     * Execute action.
      *
      * @return \Magento\Backend\Model\View\Result\Redirect
-     * @throws \Magento\Framework\Exception\LocalizedException|\Exception
+     * @throws \Magento\Framework\Exception\NotFoundException
      */
     public function execute()
     {
+        if (!$this->getRequest()->isPost()) {
+            throw new NotFoundException(__('Page not found.'));
+        }
+
         $collection = $this->filter->getCollection($this->collectionFactory->create());
         $collectionSize = $collection->getSize();
 
@@ -72,22 +78,23 @@ class MassDelete extends \Magento\Backend\App\Action
                 $this->synGroupRepository->delete($synonymGroup);
                 $deletedItems++;
             } catch (\Exception $e) {
-                $this->messageManager->addError($e->getMessage());
+                $this->messageManager->addErrorMessage($e->getMessage());
             }
         }
         if ($deletedItems != 0) {
             if ($collectionSize != $deletedItems) {
-                $this->messageManager->addError(
+                $this->messageManager->addErrorMessage(
                     __('Failed to delete %1 synonym group(s).', $collectionSize - $deletedItems)
                 );
             }
 
-            $this->messageManager->addSuccess(
+            $this->messageManager->addSuccessMessage(
                 __('A total of %1 synonym group(s) have been deleted.', $deletedItems)
             );
         }
         /** @var \Magento\Backend\Model\View\Result\Redirect $resultRedirect */
         $resultRedirect = $this->resultFactory->create(\Magento\Framework\Controller\ResultFactory::TYPE_REDIRECT);
+
         return $resultRedirect->setPath('*/*/');
     }
 }

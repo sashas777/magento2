@@ -28,6 +28,14 @@ abstract class AbstractCarrierOnline extends AbstractCarrier
 
     const GUAM_REGION_CODE = 'GU';
 
+    const SPAIN_COUNTRY_ID = 'ES';
+
+    const CANARY_ISLANDS_COUNTRY_ID = 'IC';
+
+    const SANTA_CRUZ_DE_TENERIFE_REGION_ID = 'Santa Cruz de Tenerife';
+
+    const LAS_PALMAS_REGION_ID = 'Las Palmas';
+
     /**
      * Array of quotes
      *
@@ -301,10 +309,24 @@ abstract class AbstractCarrierOnline extends AbstractCarrier
      *
      * @param \Magento\Framework\DataObject $request
      * @return $this|bool|\Magento\Framework\DataObject
+     * @deprecated
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function proccessAdditionalValidation(\Magento\Framework\DataObject $request)
+    {
+        return $this->processAdditionalValidation($request);
+    }
+
+    /**
+     * Processing additional validation to check if carrier applicable.
+     *
+     * @param \Magento\Framework\DataObject $request
+     * @return $this|bool|\Magento\Framework\DataObject
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     */
+    public function processAdditionalValidation(\Magento\Framework\DataObject $request)
     {
         //Skip by item validation if there is no items in request
         if (!count($this->getAllItems($request))) {

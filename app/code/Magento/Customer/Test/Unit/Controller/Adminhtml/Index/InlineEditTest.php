@@ -5,9 +5,14 @@
  */
 namespace Magento\Customer\Test\Unit\Controller\Adminhtml\Index;
 
+use Magento\Customer\Model\AddressRegistry;
 use Magento\Customer\Model\EmailNotificationInterface;
+use Magento\Framework\DataObject;
+use Magento\Framework\Message\MessageInterface;
 
 /**
+ * Unit tests for Inline customer edit.
+ *
  * @SuppressWarnings(PHPMD.TooManyFields)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
@@ -67,14 +72,25 @@ class InlineEditTest extends \PHPUnit\Framework\TestCase
     /** @var EmailNotificationInterface|\PHPUnit_Framework_MockObject_MockObject */
     private $emailNotification;
 
+    /** @var AddressRegistry|\PHPUnit_Framework_MockObject_MockObject */
+    private $addressRegistry;
+
     /** @var array */
     private $items;
 
+    /**
+     * @inheritdoc
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     */
     protected function setUp()
     {
         $objectManager = new \Magento\Framework\TestFramework\Unit\Helper\ObjectManager($this);
 
-        $this->request = $this->getMockForAbstractClass(\Magento\Framework\App\RequestInterface::class, [], '', false);
+        $this->request = $this->getMockBuilder(\Magento\Framework\App\RequestInterface::class)
+            ->setMethods(['isPost'])
+            ->getMockForAbstractClass();
+        $this->request->expects($this->any())->method('isPost')->willReturn(true);
         $this->messageManager = $this->getMockForAbstractClass(
             \Magento\Framework\Message\ManagerInterface::class,
             [],
@@ -124,8 +140,12 @@ class InlineEditTest extends \PHPUnit\Framework\TestCase
             '',
             false
         );
-        $this->logger = $this->getMockForAbstractClass(\Psr\Log\LoggerInterface::class, [], '', false);
-
+        $this->logger = $this->getMockForAbstractClass(
+            \Psr\Log\LoggerInterface::class,
+            [],
+            '',
+            false
+        );
         $this->emailNotification = $this->getMockBuilder(EmailNotificationInterface::class)
             ->disableOriginalConstructor()
             ->getMock();
@@ -137,6 +157,7 @@ class InlineEditTest extends \PHPUnit\Framework\TestCase
                 'messageManager' => $this->messageManager,
             ]
         );
+        $this->addressRegistry = $this->createMock(\Magento\Customer\Model\AddressRegistry::class);
         $this->controller = $objectManager->getObject(
             \Magento\Customer\Controller\Adminhtml\Index\InlineEdit::class,
             [
@@ -149,6 +170,7 @@ class InlineEditTest extends \PHPUnit\Framework\TestCase
                 'addressDataFactory' => $this->addressDataFactory,
                 'addressRepository' => $this->addressRepository,
                 'logger' => $this->logger,
+                'addressRegistry' => $this->addressRegistry,
             ]
         );
         $reflection = new \ReflectionClass(get_class($this->controller));
@@ -164,6 +186,9 @@ class InlineEditTest extends \PHPUnit\Framework\TestCase
         ];
     }
 
+    /**
+     * @param int $populateSequence
+     */
     protected function prepareMocksForTesting($populateSequence = 0)
     {
         $this->resultJsonFactory->expects($this->once())
@@ -200,6 +225,11 @@ class InlineEditTest extends \PHPUnit\Framework\TestCase
             ->willReturn(12);
     }
 
+    /**
+     * Prepare mocks for update customers default billing address use case.
+     *
+     * @return void
+     */
     protected function prepareMocksForUpdateDefaultBilling()
     {
         $this->prepareMocksForProcessAddressData();
@@ -208,12 +238,15 @@ class InlineEditTest extends \PHPUnit\Framework\TestCase
             'firstname' => 'Firstname',
             'lastname' => 'Lastname',
         ];
-        $this->customerData->expects($this->once())
+        $this->customerData->expects($this->exactly(2))
             ->method('getAddresses')
             ->willReturn([$this->address]);
         $this->address->expects($this->once())
             ->method('isDefaultBilling')
             ->willReturn(true);
+        $this->addressRegistry->expects($this->once())
+            ->method('retrieve')
+            ->willReturn(new DataObject());
         $this->dataObjectHelper->expects($this->at(0))
             ->method('populateWithArray')
             ->with(
@@ -239,10 +272,11 @@ class InlineEditTest extends \PHPUnit\Framework\TestCase
             ->method('getMessages')
             ->willReturn($this->messageCollection);
         $this->messageCollection->expects($this->once())
-            ->method('getItems')
+            ->method('getErrors')
             ->willReturn([$this->message]);
         $this->messageCollection->expects($this->once())
-            ->method('getCount')
+            ->method('getCountByType')
+            ->with(MessageInterface::TYPE_ERROR)
             ->willReturn(1);
         $this->message->expects($this->once())
             ->method('getText')
@@ -300,6 +334,11 @@ class InlineEditTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($this->resultJson, $this->controller->execute());
     }
 
+    /**
+     * Unit test for verifying Localized Exception during inline edit.
+     *
+     * @return void
+     */
     public function testExecuteLocalizedException()
     {
         $exception = new \Magento\Framework\Exception\LocalizedException(__('Exception message'));
@@ -307,6 +346,9 @@ class InlineEditTest extends \PHPUnit\Framework\TestCase
         $this->customerData->expects($this->once())
             ->method('getDefaultBilling')
             ->willReturn(false);
+        $this->customerData->expects($this->once())
+            ->method('getAddresses')
+            ->willReturn([]);
         $this->customerRepository->expects($this->once())
             ->method('save')
             ->with($this->customerData)
@@ -322,6 +364,11 @@ class InlineEditTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($this->resultJson, $this->controller->execute());
     }
 
+    /**
+     * Unit test for verifying Execute Exception during inline edit.
+     *
+     * @return void
+     */
     public function testExecuteException()
     {
         $exception = new \Exception('Exception message');
@@ -329,6 +376,9 @@ class InlineEditTest extends \PHPUnit\Framework\TestCase
         $this->customerData->expects($this->once())
             ->method('getDefaultBilling')
             ->willReturn(false);
+        $this->customerData->expects($this->once())
+            ->method('getAddresses')
+            ->willReturn([]);
         $this->customerRepository->expects($this->once())
             ->method('save')
             ->with($this->customerData)

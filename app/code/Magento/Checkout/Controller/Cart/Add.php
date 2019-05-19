@@ -1,6 +1,5 @@
 <?php
 /**
- *
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
@@ -75,11 +74,19 @@ class Add extends \Magento\Checkout\Controller\Cart
      * Add product to shopping cart action
      *
      * @return \Magento\Framework\Controller\Result\Redirect
+     * @throws \Magento\Framework\Exception\NotFoundException
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function execute()
     {
+        if (!$this->getRequest()->isPost()) {
+            throw new \Magento\Framework\Exception\NotFoundException(__('Page not found.'));
+        }
+
         if (!$this->_formKeyValidator->validate($this->getRequest())) {
+            $this->messageManager->addErrorMessage(
+                __('Your session has expired')
+            );
             return $this->resultRedirectFactory->create()->setPath('*/*/');
         }
 
@@ -122,11 +129,21 @@ class Add extends \Magento\Checkout\Controller\Cart
 
             if (!$this->_checkoutSession->getNoCartRedirect(true)) {
                 if (!$this->cart->getQuote()->getHasError()) {
-                    $message = __(
-                        'You added %1 to your shopping cart.',
-                        $product->getName()
-                    );
-                    $this->messageManager->addSuccessMessage($message);
+                    if ($this->shouldRedirectToCart()) {
+                        $message = __(
+                            'You added %1 to your shopping cart.',
+                            $product->getName()
+                        );
+                        $this->messageManager->addSuccessMessage($message);
+                    } else {
+                        $this->messageManager->addComplexSuccessMessage(
+                            'addCartSuccessMessage',
+                            [
+                                'product_name' => $product->getName(),
+                                'cart_url' => $this->getCartUrl(),
+                            ]
+                        );
+                    }
                 }
                 return $this->goBack(null, $product);
             }
@@ -147,8 +164,7 @@ class Add extends \Magento\Checkout\Controller\Cart
             $url = $this->_checkoutSession->getRedirectUrl(true);
 
             if (!$url) {
-                $cartUrl = $this->_objectManager->get(\Magento\Checkout\Helper\Cart::class)->getCartUrl();
-                $url = $this->_redirect->getRedirectUrl($cartUrl);
+                $url = $this->_redirect->getRedirectUrl($this->getCartUrl());
             }
 
             return $this->goBack($url);
@@ -186,6 +202,25 @@ class Add extends \Magento\Checkout\Controller\Cart
 
         $this->getResponse()->representJson(
             $this->_objectManager->get(\Magento\Framework\Json\Helper\Data::class)->jsonEncode($result)
+        );
+    }
+
+    /**
+     * @return string
+     */
+    private function getCartUrl()
+    {
+        return $this->_url->getUrl('checkout/cart', ['_secure' => true]);
+    }
+
+    /**
+     * @return bool
+     */
+    private function shouldRedirectToCart()
+    {
+        return $this->_scopeConfig->isSetFlag(
+            'checkout/cart/redirect_to_cart',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE
         );
     }
 }

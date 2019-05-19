@@ -8,10 +8,11 @@
           visible="visible"
           css="_required: required"
           attr="'data-index': index">
-    <legend class="admin__field-label" if="showLabel">
-        <span translate="label" attr="'data-config-scope': $data.scopeLabel"/>
-    </legend>
-
+    <div if="showLabel" class="admin__field-label">
+        <legend>
+            <span translate="label" attr="'data-config-scope': $data.scopeLabel"/>
+        </legend>
+    </div>
     <div class="admin__field-control" css="$data.additionalClasses">
         <each args="elems">
             <if args="visible()" if="!$data.additionalForGroup">
@@ -19,7 +20,7 @@
                 <render args="elementTmpl" if="element.input_type == 'checkbox' || element.input_type == 'radio'"/>
             </if>
         </each>
-        
+
         <each args="getRegion('insideGroup')" render=""/>
 
         <each args="elems" if="validateWholeGroup">

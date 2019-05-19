@@ -8,6 +8,7 @@ namespace Magento\Sitemap\Controller\Adminhtml\Sitemap;
 use Magento\Backend\App\Action;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Controller;
+use Magento\Framework\Exception\NotFoundException;
 
 class Save extends \Magento\Sitemap\Controller\Adminhtml\Sitemap
 {
@@ -30,7 +31,7 @@ class Save extends \Magento\Sitemap\Controller\Adminhtml\Sitemap
             $validator->setPaths($helper->getValidPaths());
             if (!$validator->isValid($path)) {
                 foreach ($validator->getMessages() as $message) {
-                    $this->messageManager->addError($message);
+                    $this->messageManager->addErrorMessage($message);
                 }
                 // save data in session
                 $this->_objectManager->get(\Magento\Backend\Model\Session::class)->setFormData($data);
@@ -83,13 +84,13 @@ class Save extends \Magento\Sitemap\Controller\Adminhtml\Sitemap
             // save the data
             $model->save();
             // display success message
-            $this->messageManager->addSuccess(__('You saved the sitemap.'));
+            $this->messageManager->addSuccessMessage(__('You saved the sitemap.'));
             // clear previously saved data from session
             $this->_objectManager->get(\Magento\Backend\Model\Session::class)->setFormData(false);
             return $model->getId();
         } catch (\Exception $e) {
             // display error message
-            $this->messageManager->addError($e->getMessage());
+            $this->messageManager->addErrorMessage($e->getMessage());
             // save data in session
             $this->_objectManager->get(\Magento\Backend\Model\Session::class)->setFormData($data);
         }
@@ -132,9 +133,14 @@ class Save extends \Magento\Sitemap\Controller\Adminhtml\Sitemap
      * Save action
      *
      * @return \Magento\Backend\Model\View\Result\Redirect
+     * @throws NotFoundException
      */
     public function execute()
     {
+        if (!$this->getRequest()->isPost()) {
+            throw new NotFoundException(__('Page not found'));
+        }
+
         // check if data sent
         $data = $this->getRequest()->getPostValue();
         /** @var \Magento\Backend\Model\View\Result\Redirect $resultRedirect */

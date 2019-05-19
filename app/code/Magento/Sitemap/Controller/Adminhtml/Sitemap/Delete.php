@@ -7,6 +7,7 @@ namespace Magento\Sitemap\Controller\Adminhtml\Sitemap;
 
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\App\ObjectManager;
+use Magento\Framework\Exception\NotFoundException;
 
 class Delete extends \Magento\Sitemap\Controller\Adminhtml\Sitemap
 {
@@ -39,9 +40,15 @@ class Delete extends \Magento\Sitemap\Controller\Adminhtml\Sitemap
      * Delete action
      *
      * @return void
+     * @throws NotFoundException
+     * @throws \Magento\Framework\Exception\FileSystemException
      */
     public function execute()
     {
+        if (!$this->getRequest()->isPost()) {
+            throw new NotFoundException(__('Page not found'));
+        }
+
         $directory = $this->getFilesystem()->getDirectoryWrite(DirectoryList::ROOT);
         // check if we know what should be deleted
         $id = $this->getRequest()->getParam('sitemap_id');
@@ -53,6 +60,9 @@ class Delete extends \Magento\Sitemap\Controller\Adminhtml\Sitemap
                 $sitemap->load($id);
                 // delete file
                 $sitemapPath = $sitemap->getSitemapPath();
+                if ($sitemapPath && $sitemapPath[0] === DIRECTORY_SEPARATOR) {
+                    $sitemapPath = mb_substr($sitemapPath, 1);
+                }
                 $sitemapFilename = $sitemap->getSitemapFilename();
 
                 $path = $directory->getRelativePath($sitemapPath . $sitemapFilename);
@@ -61,20 +71,20 @@ class Delete extends \Magento\Sitemap\Controller\Adminhtml\Sitemap
                 }
                 $sitemap->delete();
                 // display success message
-                $this->messageManager->addSuccess(__('You deleted the sitemap.'));
+                $this->messageManager->addSuccessMessage(__('You deleted the sitemap.'));
                 // go to grid
                 $this->_redirect('adminhtml/*/');
                 return;
             } catch (\Exception $e) {
                 // display error message
-                $this->messageManager->addError($e->getMessage());
+                $this->messageManager->addErrorMessage($e->getMessage());
                 // go back to edit form
                 $this->_redirect('adminhtml/*/edit', ['sitemap_id' => $id]);
                 return;
             }
         }
         // display error message
-        $this->messageManager->addError(__('We can\'t find a sitemap to delete.'));
+        $this->messageManager->addErrorMessage(__('We can\'t find a sitemap to delete.'));
         // go to grid
         $this->_redirect('adminhtml/*/');
     }

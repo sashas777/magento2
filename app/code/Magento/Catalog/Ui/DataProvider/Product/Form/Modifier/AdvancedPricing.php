@@ -139,7 +139,8 @@ class AdvancedPricing extends AbstractModifier
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
+     *
      * @since 101.0.0
      */
     public function modifyMeta(array $meta)
@@ -158,7 +159,8 @@ class AdvancedPricing extends AbstractModifier
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
+     *
      * @since 101.0.0
      */
     public function modifyData(array $data)
@@ -381,6 +383,7 @@ class AdvancedPricing extends AbstractModifier
             );
 
             $advancedPricingButton['arguments']['data']['config'] = [
+                'dataScope' => 'advanced_pricing_button',
                 'displayAsLink' => true,
                 'formElement' => Container::NAME,
                 'componentType' => Container::NAME,
@@ -432,7 +435,8 @@ class AdvancedPricing extends AbstractModifier
                         'dndConfig' => [
                             'enabled' => false,
                         ],
-                        'disabled' => false,
+                        'disabled' =>
+                            $this->arrayManager->get($tierPricePath . '/arguments/data/config/disabled', $this->meta),
                         'required' => false,
                         'sortOrder' =>
                             $this->arrayManager->get($tierPricePath . '/arguments/data/config/sortOrder', $this->meta),

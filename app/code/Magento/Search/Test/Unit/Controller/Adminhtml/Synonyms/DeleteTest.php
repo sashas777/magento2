@@ -55,8 +55,9 @@ class DeleteTest extends \PHPUnit\Framework\TestCase
             false,
             true,
             true,
-            ['getParam']
+            ['getParam', 'isPost']
         );
+        $this->requestMock->expects($this->any())->method('isPost')->willReturn(true);
 
         $this->objectManagerMock = $this->getMockBuilder(\Magento\Framework\ObjectManager\ObjectManager::class)
             ->disableOriginalConstructor()
@@ -107,10 +108,10 @@ class DeleteTest extends \PHPUnit\Framework\TestCase
         $this->repository->expects($this->once())->method('get')->with(10)->willReturn($this->synonymGroupMock);
 
         $this->messageManagerMock->expects($this->once())
-            ->method('addSuccess')
+            ->method('addSuccessMessage')
             ->with(__('The synonym group has been deleted.'));
 
-        $this->messageManagerMock->expects($this->never())->method('addError');
+        $this->messageManagerMock->expects($this->never())->method('addErrorMessage');
 
         $this->resultRedirectMock->expects($this->once())->method('setPath')->with('*/*/')->willReturnSelf();
 
@@ -124,10 +125,10 @@ class DeleteTest extends \PHPUnit\Framework\TestCase
             ->willReturn(null);
 
         $this->messageManagerMock->expects($this->once())
-            ->method('addError')
+            ->method('addErrorMessage')
             ->with(__('We can\'t find a synonym group to delete.'));
         $this->messageManagerMock->expects($this->never())
-            ->method('addSuccess');
+            ->method('addSuccessMessage');
 
         $this->resultRedirectMock->expects($this->once())
             ->method('setPath')

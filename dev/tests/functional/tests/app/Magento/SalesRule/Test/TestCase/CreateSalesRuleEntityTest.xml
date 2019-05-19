@@ -75,7 +75,6 @@
             <data name="salesRule/data/coupon_code" xsi:type="string">Lorem ipsum dolor sit amet, consectetur adipiscing elit - %isolation%</data>
             <data name="salesRule/data/simple_action" xsi:type="string">Fixed amount discount for whole cart</data>
             <data name="salesRule/data/discount_amount" xsi:type="string">60</data>
-            <data name="salesRule/data/apply_to_shipping" xsi:type="string">No</data>
             <data name="salesRule/data/simple_free_shipping" xsi:type="string">No</data>
             <data name="salesRule/data/store_labels/0" xsi:type="string">Coupon code+Fixed amount discount for whole cart</data>
             <data name="productForSalesRule1/dataset" xsi:type="string">simple_for_salesrule_1</data>
@@ -116,8 +115,6 @@
             <constraint name="Magento\SalesRule\Test\Constraint\AssertCartPriceRuleConditionIsApplied" />
         </variation>
         <variation name="CreateSalesRuleEntityTestVariation5">
-            <data name="issue" xsi:type="string">MAGETWO-89831: Unstable FAT: Magento\SalesRule\Test\TestCase\CreateSalesRuleEntityTest</data>
-            <data name="tag" xsi:type="string">stable:no</data>
             <data name="address/data/country_id" xsi:type="string">United States</data>
             <data name="address/data/region_id" xsi:type="string">California</data>
             <data name="address/data/postcode" xsi:type="string">95814</data>

@@ -36,9 +36,9 @@
             @_icon-font-content: @icon-search,
             @_icon-font-size: 35px,
             @_icon-font-line-height: 33px,
-            @_icon-font-color: @minicart-icons-color,
-            @_icon-font-color-hover: @minicart-icons-color-hover,
-            @_icon-font-color-active: @minicart-icons-color-hover,
+            @_icon-font-color: @header-icons-color,
+            @_icon-font-color-hover: @header-icons-color-hover,
+            @_icon-font-color-active: @header-icons-color-hover,
             @_icon-font-text-hide: true
             );
             display: inline-block;
@@ -188,6 +188,17 @@
             margin-bottom: 0;
         }
     }
+
+    .form.search.advanced {
+        .field.price {
+            .with-addon {
+                .input-text {
+                    flex-basis: auto;
+                    width: 100%;
+                }
+            }
+        }
+    }
 }
 
 .media-width(@extremum, @break) when (@extremum = 'max') and (@break = @screen__s) {
@@ -255,5 +266,10 @@
 
     .search-autocomplete {
         margin-top: 0;
+    }
+
+    .form.search.advanced {
+        min-width: 600px;
+        width: 50%;
     }
 }

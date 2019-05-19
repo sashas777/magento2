@@ -17,10 +17,12 @@ use Magento\Quote\Model\Quote;
 use Magento\Store\Model\ScopeInterface;
 
 /**
- * PayPal Express Module
+ * PayPal Express Module.
+ *
  * @method \Magento\Quote\Api\Data\PaymentMethodExtensionInterface getExtensionAttributes()
  * @SuppressWarnings(PHPMD.TooManyFields)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.CookieAndSessionMisuse)
  */
 class Express extends \Magento\Payment\Model\Method\AbstractMethod
 {
@@ -44,7 +46,7 @@ class Express extends \Magento\Payment\Model\Method\AbstractMethod
      *
      * @var bool
      */
-    protected $_isGateway = false;
+    protected $_isGateway = true;
 
     /**
      * Availability option
@@ -180,6 +182,11 @@ class Express extends \Magento\Payment\Model\Method\AbstractMethod
     protected $transactionBuilder;
 
     /**
+     * @var string
+     */
+    private static $authorizationExpiredCode = 10601;
+
+    /**
      * @param \Magento\Framework\Model\Context $context
      * @param \Magento\Framework\Registry $registry
      * @param \Magento\Framework\Api\ExtensionAttributesFactory $extensionFactory
@@ -269,6 +276,7 @@ class Express extends \Magento\Payment\Model\Method\AbstractMethod
                 ApiProcessableException::API_MAXIMUM_AMOUNT_FILTER_DECLINE,
                 ApiProcessableException::API_OTHER_FILTER_DECLINE,
                 ApiProcessableException::API_ADDRESS_MATCH_FAIL,
+                self::$authorizationExpiredCode
             ]
         );
     }
@@ -432,8 +440,8 @@ class Express extends \Magento\Payment\Model\Method\AbstractMethod
     public function capture(\Magento\Payment\Model\InfoInterface $payment, $amount)
     {
         $authorizationTransaction = $payment->getAuthorizationTransaction();
-        $authorizationPeriod = abs(intval($this->getConfigData('authorization_honor_period')));
-        $maxAuthorizationNumber = abs(intval($this->getConfigData('child_authorization_number')));
+        $authorizationPeriod = abs((int)$this->getConfigData('authorization_honor_period'));
+        $maxAuthorizationNumber = abs((int)$this->getConfigData('child_authorization_number'));
         $order = $payment->getOrder();
         $isAuthorizationCreated = false;
 
@@ -538,7 +546,17 @@ class Express extends \Magento\Payment\Model\Method\AbstractMethod
      */
     public function cancel(\Magento\Payment\Model\InfoInterface $payment)
     {
-        $this->void($payment);
+        try {
+            $this->void($payment);
+        } catch (ApiProcessableException $e) {
+            if ((int)$e->getCode() === self::$authorizationExpiredCode) {
+                $payment->setTransactionId(null);
+                $payment->setIsTransactionClosed(true);
+                $payment->setShouldCloseParentTransaction(true);
+            } else {
+                throw $e;
+            }
+        }
 
         return $this;
     }
@@ -750,7 +768,7 @@ class Express extends \Magento\Payment\Model\Method\AbstractMethod
                 return false;
             }
 
-            $orderValidPeriod = abs(intval($this->getConfigData('order_valid_period')));
+            $orderValidPeriod = abs((int)$this->getConfigData('order_valid_period'));
 
             $dateCompass = new \DateTime($orderTransaction->getCreatedAt());
             $dateCompass->modify('+' . $orderValidPeriod . ' days');
@@ -805,7 +823,7 @@ class Express extends \Magento\Payment\Model\Method\AbstractMethod
      */
     protected function _isTransactionExpired(Transaction $transaction, $period)
     {
-        $period = intval($period);
+        $period = (int)$period;
         if (0 == $period) {
             return true;
         }

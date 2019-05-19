@@ -35,6 +35,10 @@ class MassDisableTest extends AbstractMassActionTest
 
         $this->pageCollectionMock = $this->createMock(\Magento\Cms\Model\ResourceModel\Page\Collection::class);
 
+        $requestMock = $this->createMock(\Magento\Framework\App\Request\Http::class);
+        $requestMock->expects($this->any())->method('isPost')->willReturn(true);
+        $this->contextMock->expects($this->any())->method('getRequest')->willReturn($requestMock);
+
         $this->massDisableController = $this->objectManager->getObject(
             \Magento\Cms\Controller\Adminhtml\Page\MassDisable::class,
             [
@@ -67,9 +71,9 @@ class MassDisableTest extends AbstractMassActionTest
             ->willReturn(new \ArrayIterator($collection));
 
         $this->messageManagerMock->expects($this->once())
-            ->method('addSuccess')
+            ->method('addSuccessMessage')
             ->with(__('A total of %1 record(s) have been disabled.', $disabledPagesCount));
-        $this->messageManagerMock->expects($this->never())->method('addError');
+        $this->messageManagerMock->expects($this->never())->method('addErrorMessage');
 
         $this->resultRedirectMock->expects($this->once())
             ->method('setPath')

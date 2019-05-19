@@ -41,7 +41,6 @@ use Magento\Store\Model\StoreManagerInterface;
  * @method \Magento\CatalogRule\Model\Rule setFromDate(string $value)
  * @method \Magento\CatalogRule\Model\Rule setToDate(string $value)
  * @method \Magento\CatalogRule\Model\Rule setCustomerGroupIds(string $value)
- * @method string getWebsiteIds()
  * @method \Magento\CatalogRule\Model\Rule setWebsiteIds(string $value)
  * @SuppressWarnings(PHPMD.TooManyFields)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -605,7 +604,10 @@ class Rule extends \Magento\Rule\Model\AbstractModel implements RuleInterface, I
         $productIds = $this->_productIds ? array_keys(array_filter($this->_productIds, function (array $data) {
             return array_filter($data);
         })) : [];
-        $this->_ruleProductProcessor->reindexList($productIds);
+
+        if (!empty($productIds)) {
+            $this->_ruleProductProcessor->reindexList($productIds);
+        }
     }
 
     /**

@@ -37,7 +37,7 @@ class CollectionTimeLabelTest extends \PHPUnit\Framework\TestCase
     protected function setUp()
     {
         $this->abstractElementMock = $this->getMockBuilder(AbstractElement::class)
-            ->setMethods(['getComment'])
+            ->setMethods(['getComment', 'getHtmlId', 'getName'])
             ->disableOriginalConstructor()
             ->getMock();
         $this->contextMock = $this->getMockBuilder(Context::class)
@@ -73,7 +73,7 @@ class CollectionTimeLabelTest extends \PHPUnit\Framework\TestCase
         $this->abstractElementMock->expects($this->any())
             ->method('getComment')
             ->willReturn('Eastern Standard Time (America/New_York)');
-        $this->assertRegexp(
+        $this->assertRegExp(
             "/Eastern Standard Time \(America\/New_York\)/",
             $this->collectionTimeLabel->render($this->abstractElementMock)
         );

@@ -11,6 +11,7 @@ use Magento\Framework\EntityManager\MetadataPool;
 
 /**
  * Class FlatTableBuilder
+ *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class FlatTableBuilder
@@ -341,20 +342,36 @@ class FlatTableBuilder
                     if (!empty($changedIds)) {
                         $select->where($this->_connection->quoteInto('et.entity_id IN (?)', $changedIds));
                     }
+
+                    /*
+                     * According to \Magento\Framework\DB\SelectRendererInterface select rendering may be updated
+                     * so we need to trigger select renderer for correct update
+                     */
+                    $select->assemble();
                     $sql = $select->crossUpdateFromSelect(['et' => $temporaryFlatTableName]);
                     $this->_connection->query($sql);
                 }
 
                 //Update not simple attributes (eg. dropdown)
-                if (isset($flatColumns[$attributeCode . $valueFieldSuffix])) {
-                    $select = $this->_connection->select()->joinInner(
-                        ['t' => $this->_productIndexerHelper->getTable('eav_attribute_option_value')],
-                        't.option_id = et.' . $attributeCode . ' AND t.store_id=' . $storeId,
-                        [$attributeCode . $valueFieldSuffix => 't.value']
-                    );
+                $columnName = $attributeCode . $valueFieldSuffix;
+                if (isset($flatColumns[$columnName])) {
+                    $columnValue = $this->_connection->getIfNullSql('ts.value', 't0.value');
+                    $select = $this->_connection->select();
+                    $select->joinLeft(
+                        ['t0' => $this->_productIndexerHelper->getTable('eav_attribute_option_value')],
+                        't0.option_id = et.' . $attributeCode . ' AND t0.store_id = 0',
+                        []
+                    )->joinLeft(
+                        ['ts' => $this->_productIndexerHelper->getTable('eav_attribute_option_value')],
+                        'ts.option_id = et.' . $attributeCode . ' AND ts.store_id = ' . $storeId,
+                        []
+                    )->columns(
+                        [$columnName => $columnValue]
+                    )->where($columnValue . ' IS NOT NULL');
                     if (!empty($changedIds)) {
                         $select->where($this->_connection->quoteInto('et.entity_id IN (?)', $changedIds));
                     }
+                    $select->assemble();
                     $sql = $select->crossUpdateFromSelect(['et' => $temporaryFlatTableName]);
                     $this->_connection->query($sql);
                 }
@@ -374,6 +391,8 @@ class FlatTableBuilder
     }
 
     /**
+     * Get metadata pool
+     *
      * @return \Magento\Framework\EntityManager\MetadataPool
      */
     private function getMetadataPool()

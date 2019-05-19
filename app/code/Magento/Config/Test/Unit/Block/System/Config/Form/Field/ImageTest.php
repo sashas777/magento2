@@ -14,6 +14,11 @@ namespace Magento\Config\Test\Unit\Block\System\Config\Form\Field;
 class ImageTest extends \PHPUnit\Framework\TestCase
 {
     /**
+     * @var \Magento\Framework\Escaper|\PHPUnit_Framework_MockObject_MockObject
+     */
+    private $escaperMock;
+
+    /**
      * @var \Magento\Framework\Url|\PHPUnit_Framework_MockObject_MockObject
      */
     protected $urlBuilderMock;
@@ -31,10 +36,13 @@ class ImageTest extends \PHPUnit\Framework\TestCase
     protected function setUp()
     {
         $objectManager = new \Magento\Framework\TestFramework\Unit\Helper\ObjectManager($this);
+        $this->escaperMock = $this->createMock(\Magento\Framework\Escaper::class);
+        $this->escaperMock->method('escapeHtml')->willReturnArgument(0);
         $this->urlBuilderMock = $this->createMock(\Magento\Framework\Url::class);
         $this->image = $objectManager->getObject(
             \Magento\Config\Block\System\Config\Form\Field\Image::class,
             [
+                'escaper' => $this->escaperMock,
                 'urlBuilder' => $this->urlBuilderMock,
             ]
         );
@@ -74,7 +82,7 @@ class ImageTest extends \PHPUnit\Framework\TestCase
                 'showInWebsite' => '1',
                 'showInStore' => '1',
                 'label' => null,
-                'backend_model' => \Magento\BackendModelConfig\Backend\Image::class,
+                'backend_model' => \Magento\Config\Model\Config\Backend\Image::class,
                 'upload_dir' => [
                     'config' => 'system/filesystem/media',
                     'scope_info' => '1',

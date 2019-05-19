@@ -12,9 +12,14 @@ class Delete extends \Magento\CatalogRule\Controller\Adminhtml\Promo\Catalog
 {
     /**
      * @return void
+     * @throws \Magento\Framework\Exception\NotFoundException
      */
     public function execute()
     {
+        if (!$this->getRequest()->isPost()) {
+            throw new \Magento\Framework\Exception\NotFoundException(__('Page not found.'));
+        }
+
         $id = $this->getRequest()->getParam('id');
         if ($id) {
             try {
@@ -25,13 +30,13 @@ class Delete extends \Magento\CatalogRule\Controller\Adminhtml\Promo\Catalog
                 $ruleRepository->deleteById($id);
 
                 $this->_objectManager->create(\Magento\CatalogRule\Model\Flag::class)->loadSelf()->setState(1)->save();
-                $this->messageManager->addSuccess(__('You deleted the rule.'));
+                $this->messageManager->addSuccessMessage(__('You deleted the rule.'));
                 $this->_redirect('catalog_rule/*/');
                 return;
             } catch (LocalizedException $e) {
-                $this->messageManager->addError($e->getMessage());
+                $this->messageManager->addErrorMessage($e->getMessage());
             } catch (\Exception $e) {
-                $this->messageManager->addError(
+                $this->messageManager->addErrorMessage(
                     __('We can\'t delete this rule right now. Please review the log and try again.')
                 );
                 $this->_objectManager->get(\Psr\Log\LoggerInterface::class)->critical($e);
@@ -39,7 +44,7 @@ class Delete extends \Magento\CatalogRule\Controller\Adminhtml\Promo\Catalog
                 return;
             }
         }
-        $this->messageManager->addError(__('We can\'t find a rule to delete.'));
+        $this->messageManager->addErrorMessage(__('We can\'t find a rule to delete.'));
         $this->_redirect('catalog_rule/*/');
     }
 }

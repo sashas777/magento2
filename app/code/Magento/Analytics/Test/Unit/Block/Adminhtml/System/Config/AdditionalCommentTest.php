@@ -36,7 +36,7 @@ class AdditionalCommentTest extends \PHPUnit\Framework\TestCase
     protected function setUp()
     {
         $this->abstractElementMock = $this->getMockBuilder(AbstractElement::class)
-            ->setMethods(['getComment', 'getLabel'])
+            ->setMethods(['getComment', 'getLabel', 'getHtmlId', 'getName'])
             ->disableOriginalConstructor()
             ->getMock();
         $this->contextMock = $this->getMockBuilder(Context::class)
@@ -65,11 +65,11 @@ class AdditionalCommentTest extends \PHPUnit\Framework\TestCase
             ->method('getLabel')
             ->willReturn('Comment label');
         $html = $this->additionalComment->render($this->abstractElementMock);
-        $this->assertRegexp(
+        $this->assertRegExp(
             "/New comment/",
             $html
         );
-        $this->assertRegexp(
+        $this->assertRegExp(
             "/Comment label/",
             $html
         );

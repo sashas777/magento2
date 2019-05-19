@@ -42,8 +42,9 @@ class DeleteTest extends \PHPUnit\Framework\TestCase
             false,
             true,
             true,
-            ['getParam', 'getPost']
+            ['getParam', 'getPost', 'isPost']
         );
+        $this->request->expects($this->any())->method('isPost')->willReturn(true);
         $auth = $this->createPartialMock(\Magento\Backend\Model\Auth::class, ['getAuthStorage']);
         $this->authStorage = $this->createPartialMock(
             \Magento\Backend\Model\Auth\StorageInterface::class,
@@ -71,7 +72,7 @@ class DeleteTest extends \PHPUnit\Framework\TestCase
             false,
             true,
             true,
-            ['addSuccess']
+            ['addSuccessMessage']
         );
         $this->categoryRepository = $this->createMock(\Magento\Catalog\Api\CategoryRepositoryInterface::class);
         $context->expects($this->any())
